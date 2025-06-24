@@ -1,4 +1,4 @@
-module github.com/IT-Nick/clean-architecture-template
+module github.com/golangtestcases/clean-architecture
 
 go 1.22.4
 
