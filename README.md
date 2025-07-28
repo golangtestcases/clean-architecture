@@ -1,95 +1,93 @@
-# Clean Architecture Template
+# Subscription Service
 
-Этот проект представляет собой шаблон для создания приложений на Go с использованием принципов Clean Architecture.
+REST-сервис для агрегации данных об онлайн-подписках пользователей, построенный на принципах Чистой Архитектуры.
 
-## Структура проекта
+## Возможности
 
+- CRUD операции над подписками
+- Подсчет суммарной стоимости подписок с фильтрацией
+- PostgreSQL с миграциями
+- Структурированное логирование
+- Docker Compose для развертывания
+- Swagger документация
+
+## API Endpoints
+
+- `POST /api/subscriptions` - создание подписки
+- `GET /api/subscriptions/{id}` - получение подписки по ID
+- `PUT /api/subscriptions/{id}` - обновление подписки
+- `DELETE /api/subscriptions/{id}` - удаление подписки
+- `GET /api/subscriptions` - список подписок с пагинацией
+- `GET /api/subscriptions/cost` - получение общей стоимости с фильтрами
+- `GET /swagger/` - Swagger документация
+
+### Фильтры для /api/subscriptions/cost:
+- `user_id` - UUID пользователя
+- `service_name` - название сервиса (частичное совпадение)
+- `start_date` - дата начала периода (MM-YYYY)
+- `end_date` - дата окончания периода (MM-YYYY)
+
+## Модель данных
+
+```json
+{
+  "id": "uuid",
+  "service_name": "string",
+  "price": "integer",
+  "user_id": "uuid", 
+  "start_date": "MM-YYYY",
+  "end_date": "MM-YYYY"
+}
 ```
-├── cmd/
-│   └── server/
-│       └── main.go                    # Точка входа в приложение
-├── internal/
-│   ├── app/
-│   │   ├── handlers/                  # HTTP хендлеры (слой представления)
-│   │   │   ├── create_entity_handler/ # Отдельная папка для каждого маршрута
-│   │   │   │   ├── create_entity_handler.go  # Хендлер + интерфейс + ServeHTTP
-│   │   │   │   ├── request.go         # DTO для входящих данных
-│   │   │   │   └── response.go        # DTO для исходящих данных
-│   │   │   └── get_entity_handler/
-│   │   │       ├── get_entity_handler.go
-│   │   │       └── response.go
-│   │   └── app.go                     # Инициализация приложения + bootstrapHandler
-│   ├── domain/
-│   │   ├── model/                     # Доменные модели (бизнес-сущности)
-│   │   │   ├── entity.go
-│   │   │   └── user.go
-│   │   └── entities/                  # Бизнес-логика для сущности
-│   │       ├── repository/            # Интерфейсы и реализации репозиториев
-│   │       │   └── repository.go
-│   │       └── service/               # Бизнес-сервисы
-│   │           └── service.go
-│   └── infra/                         # Инфраструктурный слой
-│       └── config/
-│           ├── config.go              # Конфигурация + LoadConfig
-│           └── http/
-│               └── middlewares/
-│                   └── timer_middleware.go
-└── go.mod
-```
-
-## Принципы архитектуры
-
-### 1. Слои архитектуры
-
-- **cmd/** - Точка входа в приложение
-- **internal/app/** - Слой приложения (хендлеры, роутинг)
-- **internal/domain/** - Доменный слой (бизнес-логика, модели)
-- **internal/infra/** - Инфраструктурный слой (конфигурация, внешние зависимости)
-
-### 2. Dependency Inversion
-
-Зависимости направлены внутрь к доменному слою. Внешние слои зависят от внутренних, но не наоборот.
-
-### 3. Разделение моделей
-
-- **Доменные модели** (`internal/domain/model`) - бизнес-сущности, не зависят от внешних слоев
-- **DTO модели** (`handlers/*/request.go`, `response.go`) - для HTTP API, содержат теги JSON и валидацию
-
-### 4. Паттерн хендлеров
-
-Каждый маршрут в отдельной папке с:
-- Интерфейсом сервиса (только нужные методы)
-- Структурой хендлера
-- Конструктором `NewXxxHandler()`
-- Методом `ServeHTTP()`
-
-## Использование шаблона
-
-1. Замените `github.com/IT-Nick/clean-architecture-template` на ваш модуль
-2. Переименуйте `Entity` на вашу доменную сущность
-3. Адаптируйте модели под ваши требования
-4. Добавьте необходимые зависимости в go.mod
 
 ## Запуск
 
+### С Docker Compose
+```bash
+docker-compose up --build
+```
+
+### Локально
+1. Создайте `.env` файл из `.env.example`
+2. Запустите PostgreSQL
+3. Выполните миграции
+4. Запустите приложение:
 ```bash
 go run cmd/server/main.go
 ```
 
-## Расширение
+## Конфигурация
 
-Для добавления нового маршрута:
+Настройки через переменные окружения или `.env` файл:
 
-1. Создайте папку `internal/app/handlers/{action}_{entity}_handler/`
-2. Добавьте файлы:
-   - `{action}_{entity}_handler.go` - хендлер с интерфейсом и ServeHTTP
-   - `request.go` - DTO для входящих данных (если нужно)
-   - `response.go` - DTO для исходящих данных
-3. Зарегистрируйте в `internal/app/app.go` в функции `bootstrapHandler()`
+- `SERVER_HOST` - хост сервера (по умолчанию: localhost)
+- `SERVER_PORT` - порт сервера (по умолчанию: 8080)
+- `DB_HOST` - хост PostgreSQL
+- `DB_PORT` - порт PostgreSQL
+- `DB_USER` - пользователь БД
+- `DB_PASSWORD` - пароль БД
+- `DB_NAME` - имя БД
+- `LOG_LEVEL` - уровень логирования (debug, info, warn, error)
 
-Для добавления новой сущности:
+## Разработка
 
-1. Создайте модель в `internal/domain/model/`
-2. Создайте папку `internal/domain/{entities}/`
-3. Добавьте `repository/repository.go` и `service/service.go`
-4. Создайте хендлеры для нужных операций
+### Генерация Swagger документации
+```bash
+make swagger
+```
+
+### Сборка проекта
+```bash
+make build
+```
+
+### Запуск локально
+```bash
+make run
+```
+
+### Docker команды
+```bash
+make docker-up    # Запуск с Docker Compose
+make docker-down  # Остановка контейнеров
+```
